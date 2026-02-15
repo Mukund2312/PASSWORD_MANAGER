@@ -16,15 +16,13 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 
 # ---------------- ENCRYPTION KEY ----------------
-if not os.path.exists("secret.key"):
-    key = Fernet.generate_key()
-    with open("secret.key", "wb") as f:
-        f.write(key)
-else:
-    with open("secret.key", "rb") as f:
-        key = f.read()
+key = os.environ.get("FERNET_KEY")
 
-cipher = Fernet(key)
+if not key:
+    key = Fernet.generate_key().decode()
+
+cipher = Fernet(key.encode())
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -123,7 +121,9 @@ def logout():
 def not_found(e):
     return "Page not found", 404
 
+with app.app_context():
+    db.create_all()
+
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
+
