@@ -1,22 +1,42 @@
-<h2>🔐 Password Vault</h2>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h2>🔐 Password Vault</h2>
 
-<form method="POST">
-    <input type="text" name="website" placeholder="Website" required>
-    <input type="text" name="password" placeholder="Password" required>
-    <button type="submit">Add</button>
-</form>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <p class="success">{{ message }}</p>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
-<hr>
+    <form method="POST">
+        <input type="text" name="website" placeholder="Website" required>
+        <input type="text" name="password" placeholder="Password" required>
+        <button type="submit">Add Password</button>
+    </form>
 
-<h3>Saved Passwords:</h3>
+    <hr>
 
-{% for entry in entries %}
-    <p>
-        <strong>{{ entry.website }}</strong> :
-        {{ entry.decrypted }}
-        <a href="/delete/{{ entry.id }}">Delete</a>
-    </p>
-{% endfor %}
+    <h3>Saved Passwords:</h3>
 
-<br>
-<a href="/logout">Logout</a>
+    {% for entry in entries %}
+        <p>
+            <strong>{{ entry.website }}</strong> :
+            {{ entry.decrypted }}
+            <br>
+            <a href="/delete/{{ entry.id }}">Delete</a>
+        </p>
+    {% endfor %}
+
+    <br>
+    <a href="/logout">Logout</a>
+</div>
+</body>
+</html>

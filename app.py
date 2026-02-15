@@ -1,19 +1,17 @@
 from flask import Flask, render_template, redirect, url_for, request, flash
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from cryptography.fernet import Fernet
 import os
 
+from config import Config
+from extensions import db, login_manager
+from models import User, Vault
+
 app = Flask(__name__)
-app.secret_key = "super-secret-key"
+app.config.from_object(Config)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///password_manager.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-db = SQLAlchemy(app)
-
-login_manager = LoginManager()
+db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
@@ -27,19 +25,6 @@ else:
         key = f.read()
 
 cipher = Fernet(key)
-
-# ---------------- MODELS ----------------
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
-    passwords = db.relationship("Vault", backref="owner", lazy=True)
-
-class Vault(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    website = db.Column(db.String(200), nullable=False)
-    encrypted_password = db.Column(db.String(500), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -109,7 +94,6 @@ def dashboard():
 
     entries = Vault.query.filter_by(user_id=current_user.id).all()
 
-    # Decrypt for display
     for entry in entries:
         entry.decrypted = cipher.decrypt(entry.encrypted_password.encode()).decode()
 
@@ -134,6 +118,10 @@ def delete(id):
 def logout():
     logout_user()
     return redirect(url_for("login"))
+
+@app.errorhandler(404)
+def not_found(e):
+    return "Page not found", 404
 
 if __name__ == "__main__":
     with app.app_context():
